@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <title>Converse</title>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='https://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
+  <style>
+    .chat__heading {
+      position: fixed;
+      text-align: center;
+      z-index: 1;
+      width: 100%;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    .chat__form-container {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      padding: 10px 20px;
+      position: fixed;
+      z-index: 1;
+      bottom: 0;
+    }
+
+    .chat__form {
+      display: flex;
+      justify-content: center;
+      height: 50px;
+      background-color: white;
+      border: 2px solid white;
+      max-width: 900px;
+      width: 100%;
+      border-radius: 5px;
+    }
+
+    .chat__name-input {
+      flex: 1;
+      padding: 10px;
+    }
+
+    .chat__message-input {
+      flex: 5;
+      padding: 10px;
+    }
+
+    .chat__submit {
+      padding: 10px;
+      color: white;
+      border-radius: 5px;
+    }
+
+    .chat__submit:hover::after {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .chat__submit:focus::after {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .chat__submit::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    .chat__message-list {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      overflow-y: auto;
+      padding: 60px 20px;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      min-height: 100vh;
+    }
+
+    .chat__message {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      width: 100%;
+      position: relative;
+      max-width: 900px;
+    }
+
+    .chat__name {
+      margin-right: 20px;
+    }
+
+    .chat__when {
+      position: absolute;
+      top: 0;
+      right: 2em;
+      padding: 10px;
+      background: rgba(100%, 100%, 100%, 0.9);
+      opacity: 0;
+      border-radius: 5px;
+    }
+
+    .chat__message:hover .chat__when {
+      opacity: 1;
+      right: 0em;
+    }
+
+    @media (max-width: 567px) {
+      .chat__heading {
+        font-size: 30px;
+      }
+    }
+  </style>
+
+  <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gun/0.2020.520/gun.min.js" integrity="sha512-OKI52e4CkhxV87/2HzVW9FOF9waTgyIO0qZh+4o0skK6b73irynqs7ROHVQ6cEfiwoE8i/W0tr7g3JFa1g7IFQ==" crossorigin="anonymous"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/gun/nts.js"></script>
+</head>
+
+<body>
+  <div class="chat hue2 page">
+    <h2 id='title' class="chat__heading hue2 whitet">Have a Conversation...</h2>
+    <ul class="chat__message-list">
+      <li class="none"></li>
+    </ul>
+
+    <div class="chat__form-container hue2">
+      <form class="chat__form">
+        <label for="name-input" class="visually-hidden">Name</label>
+        <input id="name-input" class="chat__name-input" placeholder="Name"></input>
+        <label for="message-input" class="visually-hidden">Message</label>
+        <input id="message-input" class="chat__message-input" placeholder="Write a message..."></input>
+        <button class="chat__submit say hue2">say</button>
+      </form>
+    </div>
+
+    <div class="model">
+      <li class="chat__message white huet2 box">
+        <b class="chat__name"></b>
+        <p class="chat__message-text"></p>
+        <span class="sort none">0</span>
+        <div class="chat__when"></div>
+      </li>
+    </div>
+  </div>
+
+  <script>
+    var gun = Gun('https://kmm-gun.herokuapp.com/gun');
+    var chat = gun.get('kmacsmess1/ ' + location.hash.slice(1));
+    var msg = {};
+    $(".chat__submit").on('click', submit);
+    $(".chat_form").on('keydown', enter);
+
+    function enter(e) {
+      if (e.which !== 13) {
+        return
+      }
+      submit(e);
+    }
+    async function submit(e) {
+      e.preventDefault();
+      var msg = {
+        when: Gun.time.is()
+      };
+
+      msg.who = $('.chat__name-input').val();
+      if (!msg.who) {
+        msg.who = 'user' + Gun.text.random(3);
+        $('.chat__name-input').val(msg.who);
+      }
+
+      msg.what = $('.chat__message-input').val();
+      if (!msg.what) {
+        return
+      }
+
+      msg.msgPreserved = JSON.stringify(msg);
+      var msgHashBase64 = await SEA.work(msg.msgPreserved, null, null, {
+        name: "SHA-256"
+      }) // carefull hear sea bug on safari? null salt yet salted, reported
+      var msgHashHex = await SEA.work(msg.msgPreserved, null, null, {
+        name: "SHA-256",
+        encode: 'hex'
+      })
+      //gun.get('#').get(msgHashBase64).put(msg.msgPreserved).once(function(data){console.log(data)});  // why? why not hex?
+      // TODO refactor above vars if possible      
+      msg.msgHashBase64 = msgHashBase64
+      msg.msgHashHex = msgHashHex
+      // Submit data (only msg.msgHashHex is required) to Cryptowerk for merkle-tree bundling and anchoring to multiple blockchains
+      var envBody = {
+        "envelope": {
+          "dataHash": msg.msgHashHex,
+          "metadata": {
+            "storage": {
+              "url": "https://plato.seallake.net/API/v1/envelope/gunProofs/" + msg.msgHashHex, // hmm need to ask Olaf when gun is source
+              "contenttype": "text/html"
+            },
+            "base64": msg.msgHashBase64,
+            "publicKey": msg
+            .verifyWithPubKey, //TODO placeholder var pair = await SEA.pair();await SEA.verify(msg, pair.pub)
+            "signature": "unknown for now - testing, same with ogMsgPreserved", // TODO remove msgPreserved and add signature of chat author
+            "ogMsgPreserved": msg.msgPreserved // remove this as there is no real need to disclose it to cw
+          }
+        }, // TODO - Optional callbacks for where blockchain proofs should be delivered. Ideally staight into gun, maybe via gunstore.io??
+        "callbacks": [{
+            "protocol": "http",
+            "url": "https://locrian-cuddly-airbus.glitch.me/30b454c7a84d19357d748a5df80854894d9cb401872a395c910c58a4a8ceaa51/",
+            "format": "JSON"
+          },
+          {
+            "protocol": "http",
+            "url": "https://en2cws4w0tqog.x.pipedream.net/",
+            "format": "JSON"
+          }
+        ]
+      }
+      // see https://plato.seallake.net/API/v1/data/gunProof1/chat-proof.html?v=152 for working old version
+      // Call merkle bundling and bc anchoring service (cryptowerk in this case)
+      postData('https://plato.seallake.net/API/v1/envelope/gunProofs/' + msg.msgHashHex, envBody)
+      // Let it do it's thing and retrieve proofs later. TODO have callback .put to gun so this may .on()
+      chat.set(msg);
+      $('.chat__message-input').val('').focus();
+    }
+
+    chat.map().once(async function (msg, id) {
+      if (!msg) {
+        return
+      }
+      // In the meantime poll for proofs and write into gun content adressing
+      // This enables hexHash of ogData lookup as wekk as the dataSeal which hash link to blockchain transaction and anchor hash
+      // console.log(msg)
+      //TODO get seal from gun/ use merkle branch to verify, currently just stores branches in gun
+      let publicProof = await wrapLinks(msg.msgHashHex);  
+      var messageList = $('.chat__message-list');
+      var last = sort(msg.when, messageList.children('li').last());
+      var li = $("#msg-" + id)[0]; // grab if exists
+      if (!li) {
+        li = $('.model li').clone(true) // else create it
+          .attr('id', 'msg-' + id)
+          .insertAfter(last);
+      }
+   
+      li = $(li);
+      var time = new Date(msg.when);
+      if (publicProof){    
+            let manualVerificationInstructions = toString(publicProof.seal);
+            let stringOfmanualVerificationInstructions = toString(manualVerificationInstructions)
+            li.find('.chat__name').text(msg.who).wrap(function() {
+              return `<a href="#" onClick="alert('Find this anchor hash: ${publicProof.seal.proofs[0].operations[publicProof.seal.proofs[0].operations.length-1].hash} \\nLook in ${publicProof.evidence[1].url}');">✅</a>`});
+            li.find('.chat__message-text').text(msg.what).wrap('<a href="' + publicProof.evidence[1].url +
+             '"></a>');
+            li.find('.chat__when').text(time.toDateString() + ', ' + time.toLocaleTimeString()).wrap(
+              '<a href="https://plato.seallake.net/API/v1/envelope/gunProofs/' + msg.msgHashHex + '"></a>');
+      }else{
+      li.find('.chat__name').text(msg.who);
+      li.find('.chat__message-text').text(msg.what);
+      li.find('.chat__when').text(time.toDateString() + ', ' + time.toLocaleTimeString());
+      }
+      li.find('.sort').text(msg.when);
+      $('html, body').stop(true, true)
+        .animate({
+          scrollTop: messageList.height()
+        });
+      
+    });
+
+// Helper functions below    
+//TODO After calling register a hash into blockchain(s)
+//     in gun .on??
+    async function wrapLinks(hexIn){
+        let buildGetUrl = 'https://plato.seallake.net/API/v1/envelope/gunProofs/' + hexIn;
+        proofList = await getProofInstructions(buildGetUrl)
+          .then(data => {
+            // console.log(data)
+            if (!data.seal) {
+              return
+            }
+            if (!data.evidence[1]) {
+              return
+            }
+            // If cryptowerk has anchored to blockchains save message and proofs to gun
+            cretePublicProof(data); // 
+            var blockChainProofs = {};
+            blockChainProofs.evidence = data.evidence;
+            blockChainProofs.seal = data.seal;
+            return blockChainProofs
+          })
+          .catch(function (e) {
+            console.error(e.message); // "oh, no!"
+            return
+          });
+        return proofList    
+    }; 
+  
+    function showDiv(verifyInstructions) {
+      alert(verifyInstructions);
+    }
+
+    function sort(num, li) {
+      return parseFloat(num) >= parseFloat($(li).find('.sort').text() || -Infinity) ? li : sort(num, li.prev())
+    }
+
+    // Example POST method implementation:
+    async function postData(url = '', data = {}) {
+      // TODO API-Key ?? for Cryptowerk Horizon not Seal Lake
+      const response = await fetch(url, {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data) // body data type must match "Content-Type" header
+      });
+      //return response.json(); // parses JSON response into native JavaScript objects
+    }
+
+    async function getProofInstructions(url = '') {
+      // TODO API-Key ?
+      const response = await fetch(url, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+      .then(handleErrors)
+      .then(function(response) {
+          // console.log("ok", response);
+          return response.json();
+      })
+      .then(function(data) {
+          // console.log(data); 
+          return data;
+      })
+      .catch(function(error) {
+          console.log(error);
+      });
+      // console.log('end of getProof function')
+      return response
+    }
+
+    function handleErrors(response) {
+      if (!response.ok) {
+        console.log(response)
+          throw Error(response.statusText);
+      }
+      return response;
+    }
+
+    async function cretePublicProof(dataIn) {
+      // Work in 'your' user nameSpace. This is just a test keypair to make it easy to try in dev console
+      var oldPair = {
+        pub: "ec6y-kMl2HbmIfx3JQEGwqpZlrp7gjUaXqz5ZTVyHho.2FaHKv8rHwJPnsB1P8tHpdQACfLHElr-Fy3lZX41sRI",
+        epub: "QKmF9qP18GsvRDy6LF2t5cdAYsJDkrfPbIKuNo-MJGQ.OBhlOXlq5DGEVo3gnvejMdK_Evg_7cgBuVtng5uf490",
+        priv: "wvvrjoelk2sejdy22nKfieTlVB1UWl4R9d9gMqs1oFE",
+        epriv: "lkE71r1VVCHSSKMlBu54QQ4U120h5SX-2YG1UMo_3iQ"
+      }
+      user = gun.user();
+      // user.create(alias, pass, cb, opt) //<- should use something like this instead
+      user.auth(oldPair);
+      let wrappedHexHashoOfData =
+      `#${dataIn.envelope.dataHash}`; // caution trusing commercial api... Use msg instea??
+      // Need keypair to write public readonly OGData and Blockchain-proofs aka data Seal.
+      gun.user().get(dataIn.envelope.dataHash).put({
+        ogData: dataIn.envelope.metadata.ogMsgPreserved,
+        dataSeal: JSON.stringify(dataIn.seal)
+      }).once(async data1 => {
+        let soul = Gun.node.soul(data1)
+        // console.log(soul)
+        let hash = await SEA.work(soul, null, null, {
+          name: 'SHA-256'
+        }) // why doesn't this work in safari??!
+        gun.get(wrappedHexHashoOfData).get(hash).put(soul, function (ack) {
+          if (ack.err) {
+            console.log('from callback, ', ack.err)
+          } else {
+            // console.log('from callback, success');
+          }
+        });
+      })
+    };
+  </script>
+</body>
+
+</html>
