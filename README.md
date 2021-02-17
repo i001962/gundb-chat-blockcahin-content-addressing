@@ -21,15 +21,19 @@ Pull requests are welcome but I'm unlikely to do anything beyond cleaning up the
 
 - Automatically send the proofs into gundb from Cryptowerk.com
 - Create a page that shows how to retrieve content and proofs via hash
-eg 
+eg retrieve the original data from it's hash 
 ```javascript
 gun.get('#3654cf4b20d505f2d311e62c63637eeac99e6672ffcf9104c697fed27e17b25d').map().once(data3=> {
      gun.get(data3).get('dataSeal').once((d=>console.log(d)));
 })
 ```
+eg retrieve the blockchain proof from the hash of the original data
+
+```javascript
 gun.get('#3654cf4b20d505f2d311e62c63637eeac99e6672ffcf9104c697fed27e17b25d').map().once(data3=> {
      gun.get(data3).get('ogData').once((d=>console.log(d)));
 })
+```
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
