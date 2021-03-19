@@ -5,6 +5,9 @@ Includes publicly accessible (yet not over writable) blockchain proofs aka branc
 
 Content addressing is also highlited here. If you know the sha256 of some content you may retrieve the content and proof from gun.
 
+## Demo
+https://plato.seallake.net/API/v1/data/gunProof1/chat-proof.html <-- may not always be available
+
 ## Installation
 
 Run from browser or push to your fav cdn. If you hit a cors error it's due to calling the cryptowerk api. Just drop the page into this...
