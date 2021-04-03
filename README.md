@@ -1,4 +1,4 @@
-# gundb-chat-blockcahin-content-addressing
+# gundb-chat-blockchain-content-addressing
 Demo example for Gundb with blockchain proofs.
 
 Includes publicly accessible (yet not over writable) blockchain proofs aka branch of merkle-tree.
